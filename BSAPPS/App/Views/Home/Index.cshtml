@@ -1,0 +1,112 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+@section scripts
+{
+    <script type="text/javascript">
+        var questionsData = [
+            {
+                "title": "Pregunta 1",
+                "question": "¿Queres un lugar al aire libre?",
+                "answer": false
+
+            },
+            {
+                "title": "Pregunta 2",
+                "question": "¿Queres tomar algo?"
+            },
+            {
+                "title": "Pregunta 3",
+                "question": "¿Queres comer algo?"
+            },
+        ];
+
+
+        var HomeModel = function (questions) {
+            var self = this;
+            var currentIndex = -1;
+            var finishIndex = 2;
+
+            self.showPlace = ko.observable(false);
+            self.place = ko.observable({Name:"test"});
+
+            self.test = function () {
+                return place().name
+            }
+
+            self.questions = ko.observableArray(ko.utils.arrayMap(questions, function (item) {
+                return {
+                    title: item.title,
+                    question: item.question,
+                    answer: ko.observable(false),
+                    visible: ko.observable(false),
+                };
+            }));
+
+            self.answerQuestionTrue = function (question) {
+                question.answer(true);
+                question.visible(false);
+                self.NextQuestion();
+            };
+            self.answerQuestionFalse = function (question) {
+                question.answer(false);
+                question.visible(false);
+                self.NextQuestion();
+            };
+            self.NextQuestion = function () {
+                console.log("finishIndex:" + finishIndex)
+                console.log("currentIndex:" + currentIndex)
+                if (finishIndex == currentIndex) {
+                    self.showPlace(true);
+                    self.loadPlace();
+                    return;
+                }
+                currentIndex++;
+                self.questions()[currentIndex].visible(true);
+            };
+            self.loadPlace = function () {
+                var data = [self.questions()[0].answer(), self.questions()[1].answer(), self.questions()[2].answer()];
+                $.ajax({
+                    url: "/Home/GetPlace",
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        answers: data
+                    }),
+                    success: function (result) {
+                        self.place(result)
+                    },
+                    error: function (jqXHR, exception) {
+                        alert('Error message.');
+                    }
+                });
+            };
+        };
+
+        var model = new HomeModel(questionsData);
+        model.NextQuestion();
+        ko.applyBindings(model);
+
+
+    </script>
+}
+
+<div>
+    <div data-bind="foreach: questions">
+        <div data-bind="visible: visible">
+            <div data-bind="text: title"></div>
+            <div data-bind="text: question"></div>
+            <div data-bind="text: answer"></div>
+            <input type="button" data-bind="click: $parent.answerQuestionTrue" value="Si" />
+            <input type="button" data-bind="click: $parent.answerQuestionFalse " value="No" />
+        </div>
+    </div>
+
+    <div data-bind="visible: showPlace">
+        <div data-bind="text: place().Name"></div>
+    </div>
+</div>
+
+
+
