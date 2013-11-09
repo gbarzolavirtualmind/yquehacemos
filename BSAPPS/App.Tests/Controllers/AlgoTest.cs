@@ -8,6 +8,7 @@ using App;
 using App.Controllers;
 using Core;
 using Moq;
+using Core.Domain;
 
 namespace App.Tests
 {

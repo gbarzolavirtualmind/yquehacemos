@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewBag.Title - My ASP.NET MVC Application</title>
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <meta name="viewport" content="width=device-width" />
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script type="text/javascript">
+        function deleteWithConfirm(elem)
+        {
+            var message = $(elem).data("message");
+            var url = $(elem).data("url");
+            var id = $(elem).data("id");
+            var data = {id:id};
+            if (confirm(message))
+            {
+                $.post(url, data, function (result) {
+                    $(elem).parent().parent().remove()
+                });
+            }
+        }
+
+
+    </script>
+</head>
+<body>
+    <!-- Wrap all page content here -->
+    <div id="wrap">
+        <!-- Begin page content -->
+        <div class="container" style="padding-top:180px">
+            @RenderBody()
+        </div>
+    </div>
+</body>
+</html>
