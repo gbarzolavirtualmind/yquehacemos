@@ -33,7 +33,7 @@
         var HomeModel = function (questions) {
             var self = this;
             var currentIndex = -1;
-            var finishIndex = 2;
+            var finishIndex = 4;
 
             self.showPlace = ko.observable(false);
             self.place = ko.observable({Name:"test"});
@@ -73,7 +73,10 @@
                 self.questions()[currentIndex].visible(true);
             };
             self.loadPlace = function () {
-                var data = [self.questions()[0].answer(), self.questions()[1].answer(), self.questions()[2].answer()];
+                var data = ko.utils.arrayMap(self.questions(), function (item) {
+                    return item.answer();
+                });
+
                 $.ajax({
                     url: "/Home/GetPlace",
                     type: 'POST',
@@ -104,7 +107,6 @@
         <div data-bind="visible: visible">
             <div data-bind="text: title"></div>
             <div data-bind="text: question"></div>
-            <div data-bind="text: answer"></div>
             <input type="button" data-bind="click: $parent.answerQuestionTrue" value="Si" />
             <input type="button" data-bind="click: $parent.answerQuestionFalse " value="No" />
         </div>
