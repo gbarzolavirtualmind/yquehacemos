@@ -29,7 +29,7 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Parque Lezama" };
 
             var sut = new Service(Engine.Object,PlaceRepository.Object);
-            var place = sut.GetPlace(true, false, true);
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
 
@@ -45,7 +45,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Zoologico BS AS" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(true, true, true);
+            var answers = new List<bool> { true, true, true }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -56,7 +57,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Zoologico BS AS" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(true, true, false);
+            var answers = new List<bool> { true, true, false }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -67,7 +69,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Zoologico BS AS" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(true, false, true);
+            var answers = new List<bool> { true, false, false }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -80,7 +83,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Parque Lezama" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(true, false, false);
+            var answers = new List<bool> { true, false, false }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -93,7 +97,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Antares" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(false, true, true);
+            var answers = new List<bool> { false, true, true }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -106,7 +111,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Antares" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(false, true, false);
+            var answers = new List<bool> { false, true, false }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -121,7 +127,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Antares" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(false, false, true);
+            var answers = new List<bool> { false, false, true }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }
@@ -134,7 +141,8 @@ namespace App.Tests
             var expectedPlace = new Place { Name = "Museo" };
 
             var sut = new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded());
-            var place = sut.GetPlace(false, false, false);
+            var answers = new List<bool> { false, false, false }.ToArray();
+            var place = sut.GetPlace(answers);
 
             Assert.AreEqual(expectedPlace.Name, place.Name);
         }

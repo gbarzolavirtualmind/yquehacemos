@@ -16,10 +16,8 @@ namespace Core
             repository = Repository;
         }
 
-        public Place GetPlace(bool answer1, bool answer2, bool answer3)
+        public Place GetPlace(bool[] answers)
         {
-            List<bool> answers = new List<bool>{answer1,answer2,answer3};
-
             var recomendation = engine.GetRecommendationFor(answers.ToArray());
 
             return new Place { Name = recomendation.Name };

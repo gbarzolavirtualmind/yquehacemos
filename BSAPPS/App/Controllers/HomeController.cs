@@ -26,7 +26,7 @@ namespace App.Controllers
         public JsonResult GetPlace(bool[] answers)
         {
             //return Json(1);
-            return Json(service.GetPlace(answers[0], answers[1], answers[2]));
+            return Json(service.GetPlace(answers));
         }
 
         public ActionResult Index()
