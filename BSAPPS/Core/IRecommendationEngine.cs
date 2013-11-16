@@ -1,7 +1,12 @@
 ﻿using Core.Domain;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Text;
 
 namespace Core
@@ -13,6 +18,7 @@ namespace Core
 
     public class Recommendation {
         public int PlaceId { get; set; }
+        public string Name { get; set; }
     }
 
     public class RecomendationHarcoded : IRecommendationEngine
@@ -67,6 +73,86 @@ namespace Core
             }
             return null;
         }
+    }
+
+    public class GoogleRecommendationEngine : IRecommendationEngine
+    {
+        public Recommendation GetRecommendationFor(bool[] answers)
+        {
+            string authorizationHeader = ConfigurationManager.AppSettings["AuthorizationHeader"];
+            string urlPredict = ConfigurationManager.AppSettings["urlPredict"];
+
+            var answersInt = answers.ToList().Select(x => (x ? 1: 0)).ToArray();
+
+            var model = new PredictionRequest { input = new PredictionInput { csvInstance = answersInt} };
+            DataContractJsonSerializer oSerializer = new DataContractJsonSerializer(typeof(PredictionRequest));
+
+            byte[] data = null;
+            using (MemoryStream ms = new MemoryStream())
+		    {
+			    oSerializer.WriteObject(ms, model);
+                data = ms.ToArray();
+                var json = Encoding.Default.GetString(ms.ToArray());
+                System.Diagnostics.Debug.WriteLine(json);
+		    }
+
+
+            
+
+            WebClient client = new WebClient();
+            client.Headers.Add("Authorization", authorizationHeader);
+            client.Headers.Add("Content-type", "application/json");
+            var resultData = client.UploadData(urlPredict,"POST",data);
+
+            PredictionResult result = null;
+
+            DataContractJsonSerializer deserializer = new DataContractJsonSerializer(typeof(PredictionResult));
+
+            using (MemoryStream ms = new MemoryStream(resultData))
+            {
+                result = deserializer.ReadObject(ms) as PredictionResult;
+            }
+
+            return new Recommendation
+            {
+                Name = result.outputLabel,
+                PlaceId = 1
+            };
+        }
+    }
+
+    public class PredictionRequest
+    {
+        [DataMember(Name = "input")]
+        public PredictionInput input { get; set; }
+
+    
+    }
+
+    [DataContract]
+    public class PredictionResult
+    {
+        [DataMember]
+        public string outputLabel { get; set; }
+
+        [DataMember]
+        public List<PredictionMulti> outputMulti { get; set; }
+
+    }
+    [DataContract]
+    public class PredictionMulti
+    {
+        [DataMember]
+        public string label { get; set; }
+
+        [DataMember]
+        public string score { get; set; }
+    }
+
+    public class PredictionInput
+    {
+        [DataMember(Name = "csvInstance")]
+        public int[] csvInstance { get; set; }
     }
 
     public class PlaceRepositoryHarcoded : IPlaceRepository

@@ -9,22 +9,19 @@ namespace App.Backend.Controllers
 {
     public class AttributesController : BaseCrudController<Core.Domain.Attribute>
     {
-        public AttributesController(IRepository<Core.Domain.Attribute> repo)
-        :base(repo){
-        
+        public AttributesController(IUnitOfWork unitOfWork)
+            : base(unitOfWork)
+        {
+
         }
 
         public AttributesController()
-        :this(new TestRepo<Core.Domain.Attribute>(
-            (x,y) => x.Id = y,
-            (x, y) => { x.Image = y.Image; x.Name = y.Name; },
-            (x) => x.Id
-            ))
+            : this(new TestUnitOfWork())
         {
- 
-        
+
+
         }
 
-        
+
     }
 }

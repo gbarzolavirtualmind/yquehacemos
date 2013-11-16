@@ -10,15 +10,15 @@ namespace App.Backend.Controllers
 {
     public abstract class BaseCrudController<T> : Controller where T: class
     {
-        IRepository<T> _crudRepository;
-        public BaseCrudController(IRepository<T> crudRepository)
+        private IUnitOfWork _unitOfWork;
+        public BaseCrudController(IUnitOfWork UnitOfWork)
         {
-            _crudRepository = crudRepository;
+            _unitOfWork = UnitOfWork;
         }
         [HttpGet]
         public ActionResult Index()
         {
-            return View(_crudRepository.GetAll());
+            return View(_unitOfWork.Repository<T>().GetAll());
         }
 
         [HttpGet]
@@ -30,7 +30,7 @@ namespace App.Backend.Controllers
         [HttpGet]
         public ViewResult Edit(int id)
         {
-            return View(_crudRepository.GetById(id));
+            return View(_unitOfWork.Repository<T>().GetById(id));
         }
 
         [HttpPost]
@@ -38,7 +38,7 @@ namespace App.Backend.Controllers
         {
             if (ModelState.IsValid)
             {
-                _crudRepository.Update(item);
+                _unitOfWork.Repository<T>().Update(item);
                 return RedirectToAction("Index");
             }
 
@@ -50,7 +50,7 @@ namespace App.Backend.Controllers
         {
             if (ModelState.IsValid)
             {
-                _crudRepository.Add(newItem);
+                _unitOfWork.Repository<T>().Add(newItem);
                 return RedirectToAction("Index");
             }
             return View(newItem);
@@ -60,54 +60,42 @@ namespace App.Backend.Controllers
         [HttpPost]
         public JsonResult Delete(int id)
         {
-            _crudRepository.Delete(id);
+            _unitOfWork.Repository<T>().Delete(id);
             return Json(true);
         }
     }
 
     public class QuestionsController : BaseCrudController<Question>
     {
-        public QuestionsController(IRepository<Question> repository)
-        :base(repository)
+        public QuestionsController(IUnitOfWork UnitOfWork)
+        :base(UnitOfWork)
         {
             
         }
 
         public QuestionsController()
-        :this(new TestRepo<Question>(
-            (x,y) => x.Id = y,
-            (x,y) => { x.Content = y.Content;},
-            (x) => x.Id
-            ))
+        :this(new TestUnitOfWork())
         { 
             
         }
-
-        
-
-        
-
     }
 
-    public class PlacesController : BaseCrudController<Place> {
-       public PlacesController(IRepository<Place> repository)
-        :base(repository)
+    public class PlacesController : BaseCrudController<Place>
+    {
+        public PlacesController(IUnitOfWork unitOfWork)
+            : base(unitOfWork)
         {
-            
+
         }
 
-       public PlacesController()
-        :this(new TestRepo<Place>(
-            (x,y) => x.Id = y,
-            (x, y) => { x.Address = y.Address; x.Description = y.Description; x.Name = y.Name; },
-            (x) => x.Id
-            ))
-        { 
-            
+        public PlacesController()
+            : this(new TestUnitOfWork())
+        {
+
         }
 
-      
-    
+
+
     }
 
     public class TestRepo<T> : IRepository<T> where T: class
@@ -154,4 +142,42 @@ namespace App.Backend.Controllers
             return _items.FirstOrDefault(x => _getIdProperty(x) == id);
         }
     }
+
+    public class TestUnitOfWork : IUnitOfWork
+    {
+        private static Dictionary<Type,object> _repositories = new Dictionary<Type,object>();
+
+        private object CreateRepository(Type type)
+        {
+            if(type == typeof(Question))
+            {
+                return new TestRepo<Question>((x,y) => x.Id =y,(x,y) => x.Content = y.Content,(x) => x.Id);
+            }
+            if(type == typeof(Core.Domain.Attribute))
+            {
+                return new TestRepo<Core.Domain.Attribute>((x,y) => x.Id =y,(x,y) => {x.Name = y.Name; x.Image = y.Image;},(x) => x.Id);
+            }
+            if(type == typeof(Place))
+            {
+                return new TestRepo<Place>((x,y) => x.Id =y,(x,y) => {x.Name = y.Name; x.Address = y.Address; x.Description = y.Description;},(x) => x.Id);
+            }
+            return null;
+        }
+
+        public IRepository<T> Repository<T>() where T : class
+        {
+            var type = typeof(T);
+            if(!_repositories.ContainsKey(type))
+            {
+                _repositories[type] = CreateRepository(type);
+            }
+            return _repositories[type] as IRepository<T>;
+        }
+
+        public void Commit()
+        {
+            
+        }
+    }
+
 }

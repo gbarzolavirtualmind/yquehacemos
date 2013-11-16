@@ -12,7 +12,7 @@ namespace App.Controllers
         private Service service;
 
         public HomeController()
-            : this(new Service(new RecomendationHarcoded(), new PlaceRepositoryHarcoded()))
+            : this(new Service(new GoogleRecommendationEngine(), new PlaceRepositoryHarcoded()))
         {
 
         }

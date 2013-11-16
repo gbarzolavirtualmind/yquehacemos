@@ -22,7 +22,11 @@ namespace Core
 
             var recomendation = engine.GetRecommendationFor(answers.ToArray());
 
-            return repository.GetById(recomendation.PlaceId);
+            return new Place { Name = recomendation.Name };
+
+            //var place = repository.GetById(recomendation.PlaceId);
+
+            //return repository.GetById(recomendation.PlaceId);
 
         }
     }

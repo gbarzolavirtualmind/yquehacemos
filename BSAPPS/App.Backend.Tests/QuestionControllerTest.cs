@@ -13,59 +13,69 @@ namespace App.Backend.Tests
 {
     public abstract class CrudTest<T> where T: class
     {
-        private BaseCrudController<T> _sut;
+        private Moq.Mock<IUnitOfWork> _unitOfWork;
         private Moq.Mock<IRepository<T>> _crudRepository;
-
+        private BaseCrudController<T> _sut;
+        private T _editItem;
+        private T _invalidItem;
         protected abstract List<T> CreateListItems();
-        protected abstract BaseCrudController<T> CreateController(IRepository<T> crudRepository);
+        protected abstract BaseCrudController<T> CreateController(Moq.Mock<IUnitOfWork> unitOfWork);
         protected abstract T NewItem();
         protected abstract T EditItem(int id);
         protected abstract T InvalidItem();
 
         [TestInitialize]
         public void Setup()
-        { 
+        {
+            _editItem = EditItem(1);
+            _invalidItem = InvalidItem();
+
             _crudRepository = new Moq.Mock<IRepository<T>>();
-            _sut = CreateController(_crudRepository.Object);
+
+            _unitOfWork = new Moq.Mock<IUnitOfWork>();
+            _unitOfWork.Setup(x => x.Repository<T>()).Returns(_crudRepository.Object);
+            _unitOfWork.Setup(x => x.Repository<T>().GetAll()).Returns(CreateListItems());
+            _unitOfWork.Setup(x => x.Repository<T>().Add(NewItem()));
+            _unitOfWork.Setup(x => x.Repository<T>().Update(_editItem));
+            _unitOfWork.Setup(x => x.Repository<T>().Delete(1));
+            _unitOfWork.Setup(x => x.Repository<T>().GetById(1)).Returns(_editItem);
+            
+
+            _sut = CreateController(_unitOfWork);
                 
         }
 
         [TestMethod]
-        public void ShouldListQuestions()
+        public void Test_When_List_Items_Then_Load_And_Return_View()
         {
-            var items = CreateListItems();
-            _crudRepository.Setup(x => x.GetAll()).Returns(items);
-
             var view = _sut.Index() as ViewResult;
-
-            Assert.IsInstanceOfType(view.Model, typeof(List<T>));
-
             var model = view.Model as List<T>;
 
-            Assert.AreEqual(items.Count, model.Count);
+            Assert.AreEqual(3, model.Count);
 
-            _crudRepository.VerifyAll();
+            _unitOfWork.Verify(x => x.Repository<T>().GetAll());
         }
 
         [TestMethod]
-        public void ShouldAddNew()
+        public void Test_When_Create_Item_Return_View()
         {
-            var newQuestion = new Question { Content = "New Question" };
+            var view = _sut.Create();
+            Assert.IsInstanceOfType(view, typeof(ViewResult));
+
+        }
+
+        [TestMethod]
+        public void Test_When_Create_Item_Success_Return_To_Index()
+        {
             var newItem = NewItem();
-
-            _crudRepository.Setup(x => x.Add(newItem));
-
             var view = _sut.Create(newItem) as RedirectToRouteResult;
 
-            Assert.IsInstanceOfType(view, typeof(RedirectToRouteResult));
-
-            _crudRepository.VerifyAll();
-
-
+            Assert.AreEqual<string>("Index", view.RouteValues["action"].ToString());
+            _unitOfWork.Verify(x => x.Repository<T>().Add(newItem));
         }
 
         [TestMethod]
-        public void NotShouldAddNewQuestionWithEmptyContent()
+        public void Test_When_Create_Invalid_Item_Return_To_Create_View()
         {
             var invalidItem = InvalidItem();
             _sut.ModelState.AddModelError("*", "mock error message");
@@ -75,53 +85,43 @@ namespace App.Backend.Tests
         }
 
         [TestMethod]
-        public void ShouldShowEdit()
+        public void Test_When_Edit_Item_Return_View()
         {
-            var editItem = EditItem(1);
-
-            _crudRepository.Setup(x => x.GetById(1)).Returns(editItem);
-
             var view = _sut.Edit(1) as ViewResult;
-            Assert.AreEqual(editItem, view.Model);
+            Assert.AreSame(_editItem, view.Model);
 
-            _crudRepository.VerifyAll();
+            _unitOfWork.Verify(x => x.Repository<T>().GetById(1));
         }
 
         [TestMethod]
-        public void ShouldEditQuestion()
+        public void Test_When_Edit_Item_Success_Return_To_Index()
         {
-            var editItem = EditItem(1);
 
-            _crudRepository.Setup(x => x.Update(editItem));
+            var view = _sut.Edit(_editItem) as RedirectToRouteResult;
 
-            var view = _sut.Edit(editItem) as RedirectToRouteResult;
-
-            Assert.IsInstanceOfType(view, typeof(RedirectToRouteResult));
-
-            _crudRepository.VerifyAll();
+            Assert.AreEqual<string>("Index", view.RouteValues["action"].ToString());
+            _unitOfWork.Verify(x => x.Repository<T>().Update(_editItem));
+            
         }
 
         [TestMethod]
-        public void NotShouldEditQuestionWithEmptyContent()
+        public void Test_When_Edit_Invalid_Item_Return_To_View()
         {
-
-            var invalidItem = InvalidItem();
 
             _sut.ModelState.AddModelError("*", "mock error message");
 
-            var view = _sut.Edit(invalidItem) as ViewResult;
-            Assert.AreEqual(invalidItem, view.Model);
+            var view = _sut.Edit(_invalidItem) as ViewResult;
+            Assert.AreSame(_invalidItem, view.Model);
         }
 
-        public void ShouldDeleteQuestion()
+        [TestMethod]
+        public void Test_When_Delete_Item_Success_Return_Json()
         {
-            var item = EditItem(1);
-            _crudRepository.Setup(x => x.Delete(1));
-
             var view = _sut.Delete(1);
 
             Assert.IsInstanceOfType(view, typeof(JsonResult));
-            _crudRepository.VerifyAll();
+            _unitOfWork.Verify(x => x.Repository<T>().Delete(1));
+
         }
     }
 
@@ -138,10 +138,9 @@ namespace App.Backend.Tests
             };
         }
 
-        protected override BaseCrudController<Question> CreateController(IRepository<Question> crudRepository)
+        protected override BaseCrudController<Question> CreateController(Moq.Mock<IUnitOfWork> unitOfWork)
         {
-
-            return new QuestionsController(crudRepository);
+            return new QuestionsController(unitOfWork.Object);
         }
 
         protected override Question NewItem()
@@ -161,7 +160,8 @@ namespace App.Backend.Tests
     }
 
     [TestClass]
-    public class AttributesControllerTest : CrudTest<Core.Domain.Attribute> {
+    public class AttributesControllerTest : CrudTest<Core.Domain.Attribute>
+    {
 
         protected override List<Core.Domain.Attribute> CreateListItems()
         {
@@ -174,13 +174,17 @@ namespace App.Backend.Tests
                 new Core.Domain.Attribute{
                     Id = 2,
                     Name = "Ruido"
+                },
+                new Core.Domain.Attribute{
+                    Id = 3,
+                    Name = "Algo"
                 }
             };
         }
 
-        protected override BaseCrudController<Core.Domain.Attribute> CreateController(IRepository<Core.Domain.Attribute> crudRepository)
+        protected override BaseCrudController<Core.Domain.Attribute> CreateController(Moq.Mock<IUnitOfWork> unitOfWork)
         {
-            return new AttributesController(crudRepository);
+            return new AttributesController(unitOfWork.Object);
         }
 
         protected override Core.Domain.Attribute NewItem()
@@ -205,7 +209,7 @@ namespace App.Backend.Tests
         {
             return new Core.Domain.Attribute
             {
-              
+
             };
         }
     }
@@ -233,9 +237,9 @@ namespace App.Backend.Tests
             };
         }
 
-        protected override BaseCrudController<Place> CreateController(IRepository<Place> crudRepository)
+        protected override BaseCrudController<Place> CreateController(Moq.Mock<IUnitOfWork> unitOfWork)
         {
-            return new PlacesController(crudRepository);
+            return new PlacesController(unitOfWork.Object);
         }
 
         protected override Place NewItem()
@@ -250,7 +254,7 @@ namespace App.Backend.Tests
         {
             return new Place
             {
-                Id  = 1,
+                Id = 1,
                 Name = "test"
             };
         }
@@ -259,7 +263,7 @@ namespace App.Backend.Tests
         {
             return new Place
             {
-              
+
             };
         }
     }

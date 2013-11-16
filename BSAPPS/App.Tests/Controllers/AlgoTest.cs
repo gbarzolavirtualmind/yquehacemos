@@ -153,7 +153,18 @@ namespace App.Tests
 
             Assert.AreEqual(result.PlaceId, 1);
         }
-    
+    }
+
+    [TestClass]
+    public class RecommendationEngineGoogleTest
+    {
+        [TestMethod]
+        public void GetRecommendationPlaceId()
+        {
+            var sut = new GoogleRecommendationEngine();
+            var answers = new List<bool> { true, true, false };
+            var result = sut.GetRecommendationFor(answers.ToArray());
+        }
     }
 
     
